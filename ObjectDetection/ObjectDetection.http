@@ -1,6 +1,26 @@
-@ObjectDetection_HostAddress = http://localhost:5027
+@host = http://localhost:5027
 
-GET {{ObjectDetection_HostAddress}}/weatherforecast/
-Accept: application/json
+### 登录（管理员）
+POST {{host}}/api/auth/login
+Content-Type: application/json
 
-###
+{ "username": "admin", "password": "Admin@123" }
+
+### 设备列表（把上一步返回的 token 贴下面）
+GET {{host}}/api/devices
+Authorization: Bearer {{token}}
+
+### 设备心跳（边缘设备用 ApiKey，不用 JWT）
+POST {{host}}/api/devices/heartbeat
+Content-Type: application/json
+X-Api-Key: {{apiKey}}
+
+{ "deviceCode": "JETSON-001" }
+
+### 违规分页
+GET {{host}}/api/violations?status=Open&page=1&pageSize=20
+Authorization: Bearer {{token}}
+
+### 合规统计
+GET {{host}}/api/stats/compliance
+Authorization: Bearer {{token}}
