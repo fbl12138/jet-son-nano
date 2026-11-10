@@ -1,0 +1,26 @@
+# ---- .NET ----
+**/bin/
+**/obj/
+*.user
+*.suo
+.vs/
+
+# ---- 发布产物 ----
+deploy/
+
+# ---- 前端 ----
+web/node_modules/
+web/dist/
+**/.vite/
+**/*.tsbuildinfo
+
+# ---- 样本媒体 / 训练推理产物 ----
+samples/
+samples_check/
+runs/
+*.log
+
+# ---- 本地密钥 ----
+.env
+.env.*
+!.env.example

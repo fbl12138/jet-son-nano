@@ -1,0 +1,2 @@
+* { box-sizing: border-box; }                                           /* 宽度包含内边距 */
+body { margin: 0; font-family: system-ui, -apple-system, sans-serif; }  /* 去掉默认外边距 */

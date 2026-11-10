@@ -1,0 +1,11 @@
+# configs/bytetrack_mask.yaml
+# 为什么需要这份配置：ByteTrack 默认 new_track_thresh=0.6，
+# 而"没戴口罩"的检测置信度通常只有 0.3~0.5（脸被遮挡、侧脸、口罩拉下巴）。
+# 用默认值会把低置信度的违规框直接丢掉 —— 在工厂场景里就是漏报。
+tracker_type: bytetrack
+track_high_thresh: 0.25   # 高分框关联阈值（默认 0.5）
+track_low_thresh: 0.10    # 低分框二次关联（默认 0.1）
+new_track_thresh: 0.20    # 新建轨迹的最低分（默认 0.6）—— 关键
+track_buffer: 30          # 丢失多少帧后删除轨迹（24fps 下约 1.2s）
+match_thresh: 0.8
+fuse_score: True

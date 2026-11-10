@@ -1,0 +1,19 @@
+﻿{"trackId": "p-1", "bbox": [131, 168, 256, 189], "attributes": {"mask": null}, "compliant": false, "violations": ["no_mask"], "confidence": 0.191, "imageUrl": null}
+{"trackId": "img-24-0", "bbox": [120, 163, 286, 196], "attributes": {"mask": null}, "compliant": false, "violations": ["no_mask"], "confidence": 0.136, "imageUrl": null}
+{"trackId": "img-25-0", "bbox": [117, 162, 290, 197], "attributes": {"mask": null}, "compliant": false, "violations": ["no_mask"], "confidence": 0.12, "imageUrl": null}
+{"trackId": "img-27-0", "bbox": [117, 162, 287, 196], "attributes": {"mask": null}, "compliant": false, "violations": ["no_mask"], "confidence": 0.15, "imageUrl": null}
+{"trackId": "img-84-0", "bbox": [120, 163, 286, 196], "attributes": {"mask": null}, "compliant": false, "violations": ["no_mask"], "confidence": 0.136, "imageUrl": null}
+{"trackId": "img-85-0", "bbox": [117, 162, 290, 197], "attributes": {"mask": null}, "compliant": false, "violations": ["no_mask"], "confidence": 0.12, "imageUrl": null}
+{"trackId": "img-87-0", "bbox": [117, 162, 287, 196], "attributes": {"mask": null}, "compliant": false, "violations": ["no_mask"], "confidence": 0.15, "imageUrl": null}
+{"trackId": "img-144-0", "bbox": [120, 163, 286, 196], "attributes": {"mask": null}, "compliant": false, "violations": ["no_mask"], "confidence": 0.136, "imageUrl": null}
+{"trackId": "img-145-0", "bbox": [119, 163, 287, 196], "attributes": {"mask": null}, "compliant": false, "violations": ["no_mask"], "confidence": 0.123, "imageUrl": null}
+{"trackId": "img-146-0", "bbox": [117, 164, 289, 195], "attributes": {"mask": null}, "compliant": false, "violations": ["no_mask"], "confidence": 0.115, "imageUrl": null}
+{"trackId": "img-147-0", "bbox": [118, 164, 287, 195], "attributes": {"mask": null}, "compliant": false, "violations": ["no_mask"], "confidence": 0.104, "imageUrl": null}
+{"trackId": "img-148-0", "bbox": [118, 163, 287, 195], "attributes": {"mask": null}, "compliant": false, "violations": ["no_mask"], "confidence": 0.114, "imageUrl": null}
+{"trackId": "img-204-0", "bbox": [120, 163, 286, 196], "attributes": {"mask": null}, "compliant": false, "violations": ["no_mask"], "confidence": 0.136, "imageUrl": null}
+{"trackId": "img-205-0", "bbox": [119, 163, 287, 196], "attributes": {"mask": null}, "compliant": false, "violations": ["no_mask"], "confidence": 0.123, "imageUrl": null}
+{"trackId": "img-206-0", "bbox": [117, 164, 289, 195], "attributes": {"mask": null}, "compliant": false, "violations": ["no_mask"], "confidence": 0.115, "imageUrl": null}
+{"trackId": "img-207-0", "bbox": [118, 164, 287, 195], "attributes": {"mask": null}, "compliant": false, "violations": ["no_mask"], "confidence": 0.104, "imageUrl": null}
+{"trackId": "img-208-0", "bbox": [118, 163, 287, 195], "attributes": {"mask": null}, "compliant": false, "violations": ["no_mask"], "confidence": 0.114, "imageUrl": null}
+
+共输出 17 条 person
