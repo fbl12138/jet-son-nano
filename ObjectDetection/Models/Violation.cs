@@ -1,4 +1,4 @@
-﻿namespace ObjectDetection.Models
+namespace ObjectDetection.Models
 {
     public class Violation
     {
@@ -10,7 +10,7 @@
         public string? ImagePath { get; set; }
         public decimal? Confidence { get; set; }
         public DateTime DetectedAt { get; set; }
-        public string Status { get; set; } = "Open";
+        public ViolationStatus Status { get; set; } = ViolationStatus.Open;
         public int? HandledBy { get; set; }
         public DateTime? HandledAt { get; set; }
         public string? Remark { get; set; }

@@ -1,7 +1,8 @@
-﻿
+
 using ObjectDetection.Data;
 using Microsoft.EntityFrameworkCore;
 using ObjectDetection.Option;
+using ObjectDetection.Models;
 using Microsoft.Extensions.Options;
 
 namespace ObjectDetection.BackgroundServices
@@ -30,11 +31,11 @@ namespace ObjectDetection.BackgroundServices
                     var cutoff = DateTime.UtcNow - TimeSpan.FromSeconds(_options.HeartbeattimeoutSeconds);
                     //只处理曾经开过机 现在超时的设备
                     //从未开过机的也就是LastHeartbeatAt为null 保持offline不动
-                    var stale = await db.Devices.Where(d => d.Status == "Online" && d.LastHeartbeatAt != null && d.LastHeartbeatAt < cutoff).ToListAsync(stoppingToken);
+                    var stale = await db.Devices.Where(d => d.Status == DeviceStatus.Online && d.LastHeartbeatAt != null && d.LastHeartbeatAt < cutoff).ToListAsync(stoppingToken);
                     if (stale.Count > 0)
                     {
                         foreach (var device in stale)
-                            device.Status = "Offline";
+                            device.Status = DeviceStatus.Offline;
                         await db.SaveChangesAsync(stoppingToken);
                         _logger.LogWarning("设备心跳超时,将状态置为offline:{Codes}", string.Join(",", stale.Select(d => d.DeviceCode)));
                     }

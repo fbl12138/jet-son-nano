@@ -1,4 +1,6 @@
-﻿namespace ObjectDetection.Dtos
+using ObjectDetection.Models;
+
+namespace ObjectDetection.Dtos
 {
     public class ViolationDto
     {
@@ -8,7 +10,7 @@
         public string ViolationTypes { get; set; } = string.Empty;
         public decimal? Confidence { get; set; }
         public DateTime DetectedAt { get; set; }
-        public string Status { get; set; } = string.Empty;
+        public ViolationStatus Status { get; set; }
         public string? ImagePath { get; set; }
     }
 }

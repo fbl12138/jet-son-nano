@@ -1,9 +1,10 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using ObjectDetection.Data;
 using ObjectDetection.Dtos;
+using ObjectDetection.Models;
 
 namespace ObjectDetection.Controllers
 {
@@ -19,7 +20,7 @@ namespace ObjectDetection.Controllers
         }
         [HttpGet]
         public async Task<ActionResult<PagedResult<ViolationDto>>> Get(
-            [FromQuery] string? status,
+            [FromQuery] ViolationStatus? status,
             [FromQuery] int? deviceId,
             [FromQuery] DateTime? from,
             [FromQuery] DateTime? to,
@@ -30,8 +31,8 @@ namespace ObjectDetection.Controllers
             page = Math.Max(page, 1);
             pageSize = Math.Clamp(pageSize, 1, 100);
             var q = _db.Violations.AsNoTracking();
-            if (!string.IsNullOrWhiteSpace(status))
-                q = q.Where(v => v.Status == status);
+            if (status is ViolationStatus s)
+                q = q.Where(v => v.Status == s);
             if (deviceId is int did)
                 q = q.Where(v => v.DeviceId == did);
             if (from is DateTime f)
@@ -89,10 +90,10 @@ namespace ObjectDetection.Controllers
         {
             var v = await _db.Violations.FirstOrDefaultAsync(x => x.Id == id);
             if (v is null) return NotFound(new { message = "违规记录不存在" });
-            if (v.Status != "Open") return Conflict(new { message = $"该违规当前状态是{v.Status},不能重复处理" });
+            if (v.Status != ViolationStatus.Open) return Conflict(new { message = $"该违规当前状态是{v.Status},不能重复处理" });
             if (!int.TryParse(User.FindFirst("sub")?.Value,out var userId))
                 return Unauthorized(new { message = "Token中缺少用户标识" });
-            v.Status = "Handled";
+            v.Status = ViolationStatus.Handled;
             v.HandledBy = userId;
             v.HandledAt = DateTime.UtcNow;   // 存 UTC，和 CreatedAt 一致（DetectedAt 是设备时间，Day 13 统一）
             v.Remark = dto.Remark;

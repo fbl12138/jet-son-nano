@@ -1,4 +1,4 @@
-﻿namespace ObjectDetection.Models
+namespace ObjectDetection.Models
 {
     public class Device
     {
@@ -7,7 +7,7 @@
         public string Name { get; set; } = string.Empty;
         public string? Location { get; set; }
         public string ApiKey { get; set; } = string.Empty;
-        public string Status { get; set; } = "Offline";
+        public DeviceStatus Status { get; set; } = DeviceStatus.Offline;
         public DateTime? LastHeartbeatAt { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

@@ -9,13 +9,16 @@ using ObjectDetection.Models;
 using Microsoft.AspNetCore.Identity;
 using ObjectDetection.Infrastructure;
 using System.Text;
+using System.Text.Json.Serialization;
 using ObjectDetection.Option;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.Configure<MonitoringOptions>(builder.Configuration.GetSection(MonitoringOptions.SectionName));
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();

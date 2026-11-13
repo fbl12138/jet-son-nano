@@ -1,4 +1,4 @@
-﻿using ObjectDetection.Data;
+using ObjectDetection.Data;
 using ObjectDetection.Dtos;
 using Microsoft.EntityFrameworkCore;
 using ObjectDetection.Models;
@@ -60,7 +60,7 @@ namespace ObjectDetection.Services
                         ImagePath = person.ImageUrl,
                         Confidence = person.Confidence is double pc ? (decimal)pc : null,
                         DetectedAt = detectedAt,
-                        Status = "Open"
+                        Status = ViolationStatus.Open
                     });
                     violationCount++;
                 }

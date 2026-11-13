@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ObjectDetection.Models;
 using System.Data;
@@ -27,7 +27,7 @@ namespace ObjectDetection.Data
             b.Entity<Device>().Property(d => d.Name).HasMaxLength(100);
             b.Entity<Device>().Property(d => d.Location).HasMaxLength(200);
             b.Entity<Device>().Property(d => d.ApiKey).HasMaxLength(100);
-            b.Entity<Device>().Property(d => d.Status).HasMaxLength(20);
+            b.Entity<Device>().Property(d => d.Status).HasMaxLength(20).HasConversion<string>();
             b.Entity<Detection>().Property(d => d.LabelCode).HasMaxLength(50);
             b.Entity<Detection>().Property(d => d.TrackId).HasMaxLength(50);
             b.Entity<Detection>().Property(d => d.ImagePath).HasMaxLength(300);
@@ -35,7 +35,7 @@ namespace ObjectDetection.Data
             b.Entity<Violation>().Property(v => v.ViolationTypes).HasMaxLength(100);
             b.Entity<Violation>().Property(v => v.TrackId).HasMaxLength(50);
             b.Entity<Violation>().Property(v => v.ImagePath).HasMaxLength(300);
-            b.Entity<Violation>().Property(v => v.Status).HasMaxLength(20);
+            b.Entity<Violation>().Property(v => v.Status).HasMaxLength(20).HasConversion<string>();
             b.Entity<Violation>().Property(v => v.Remark).HasMaxLength(300);
             b.Entity<Violation>().Property(v => v.Confidence).HasPrecision(5, 4);
             b.Entity<ComplianceRule>().Property(r => r.MinConfidence).HasPrecision(5, 4);

@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using ObjectDetection.Data;
 using ObjectDetection.Dtos;
 using Microsoft.EntityFrameworkCore;
@@ -46,7 +46,7 @@ namespace ObjectDetection.Controllers
                 return Unauthorized(new { message = "设备未授权" });
             var now = DateTime.UtcNow;
             device.LastHeartbeatAt = now;
-            device.Status = "Online";
+            device.Status = DeviceStatus.Online;
             await _db.SaveChangesAsync();
             return Ok(new
             {
@@ -82,7 +82,7 @@ namespace ObjectDetection.Controllers
                     Name = d.Name,
                     Location = d.Location,
                     // 以实时判定为准，覆盖库里可能滞后的 Status
-                    Status = online ? "Online" : "Offline",
+                    Status = online ? DeviceStatus.Online : DeviceStatus.Offline,
                     LastHeartbeatAt = d.LastHeartbeatAt,
                     OfflineSeconds = online ? null : offlineSeconds
                 };
