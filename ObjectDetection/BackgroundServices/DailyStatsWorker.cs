@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ObjectDetection.Data;
+using ObjectDetection.Domain;
 using ObjectDetection.Models;
 
 namespace ObjectDetection.BackgroundServices
@@ -67,7 +68,7 @@ namespace ObjectDetection.BackgroundServices
                     }
                     row.Persons = p;
                     row.Violations = v;
-                    row.Compliant = Math.Max(0, p - v);
+                    row.Compliant = ComplianceMath.Compliant(p, v);
                     row.UpdatedAt = DateTime.UtcNow;
                 }
                 await db.SaveChangesAsync(ct);
