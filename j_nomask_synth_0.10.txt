@@ -1,3 +1,0 @@
-﻿{"trackId": "p-1", "bbox": [131, 168, 256, 189], "attributes": {"mask": null}, "compliant": false, "violations": ["no_mask"], "confidence": 0.191, "imageUrl": null}
-
-共输出 1 条 person

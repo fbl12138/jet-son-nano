@@ -1,4 +1,0 @@
-﻿{"trackId": "p-1", "bbox": [186, 91, 277, 247], "attributes": {"mask": 0.872}, "compliant": true, "violations": [], "confidence": 0.872, "imageUrl": null}
-{"trackId": "p-1", "bbox": [182, 92, 284, 245], "attributes": {"mask": 0.879}, "compliant": true, "violations": [], "confidence": 0.879, "imageUrl": null}
-
-共输出 2 条 person
