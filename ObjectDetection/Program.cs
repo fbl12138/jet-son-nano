@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using ObjectDetection.BackgroundServices;
 using ObjectDetection.Data;
+using ObjectDetection.Domain;
 using ObjectDetection.Services;
 using Swashbuckle.AspNetCore;
 using ObjectDetection.Models;
@@ -33,6 +34,7 @@ builder.Services.AddScoped<IStatsService, StatsService>();
 
 // 时间抽象：测试可注入假时钟，避免依赖系统时间
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<StatsClock>();
 var jwt = builder.Configuration.GetSection("Jwt");
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
 {

@@ -7,16 +7,13 @@ namespace ObjectDetection.Services;
 
 public sealed class StatsService : IStatsService
 {
-    /// <summary>业务时区：统计口径按上海本地的「一天」切分</summary>
-    private static readonly TimeZoneInfo Tz = TimeZoneInfo.FindSystemTimeZoneById("Asia/Shanghai");
-
     private readonly AppDbContext _db;
-    private readonly TimeProvider _time;
+    private readonly StatsClock _clock;
 
-    public StatsService(AppDbContext db, TimeProvider time)
+    public StatsService(AppDbContext db, StatsClock clock)
     {
         _db = db;
-        _time = time;
+        _clock = clock;
     }
 
     public async Task<StatsDtos> GetComplianceAsync(
@@ -24,9 +21,9 @@ public sealed class StatsService : IStatsService
     {
         var day = date is DateTime d
             ? DateOnly.FromDateTime(d)
-            : DailyWindow.LocalDate(_time.GetUtcNow(), Tz);
+            : _clock.TodayLocal;
 
-        var (start, end) = DailyWindow.ForLocalDate(day, Tz);
+        var (start, end) = DailyWindow.ForLocalDate(day, _clock.Zone);
 
         var persons = await _db.Detections.AsNoTracking()
             .CountAsync(x => x.LabelCode == "person" && x.DetectedAt >= start && x.DetectedAt < end, cancellationToken);
@@ -55,12 +52,15 @@ public sealed class StatsService : IStatsService
         days = Math.Clamp(days, 1, 31);
 
         var result = new List<DailyStatDto>(days);
-        var today = DateOnly.FromDateTime(DateTime.Today);
+
+        // 修复点：原先用 DateTime.Today（服务器本地日期）。
+        // 容器默认 UTC 时，上海已经跨天而服务器还没跨，这里会整体错一天。
+        var today = _clock.TodayLocal;
 
         for (var i = days - 1; i >= 0; i--)
         {
             var day = today.AddDays(-i);
-            var (start, end) = DailyWindow.ForLocalDate(day, Tz);
+            var (start, end) = DailyWindow.ForLocalDate(day, _clock.Zone);
 
             var persons = await _db.Detections.AsNoTracking()
                 .CountAsync(x => x.LabelCode == "person" && x.DetectedAt >= start && x.DetectedAt < end, cancellationToken);
