@@ -25,6 +25,7 @@ builder.Services.AddProblemDetails();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
 builder.Services.AddScoped<IDetectionService,DetectionService>();
+builder.Services.AddScoped<IDeviceService, DeviceService>();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHostedService<DeviceHeartbeatMonitor>();
 var jwt = builder.Configuration.GetSection("Jwt");

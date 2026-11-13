@@ -28,7 +28,7 @@ namespace ObjectDetection.BackgroundServices
                 {
                     using var scope = _scopeFactory.CreateScope();
                     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                    var cutoff = DateTime.UtcNow - TimeSpan.FromSeconds(_options.HeartbeattimeoutSeconds);
+                    var cutoff = DateTime.UtcNow - TimeSpan.FromSeconds(_options.HeartbeatTimeoutSeconds);
                     //只处理曾经开过机 现在超时的设备
                     //从未开过机的也就是LastHeartbeatAt为null 保持offline不动
                     var stale = await db.Devices.Where(d => d.Status == DeviceStatus.Online && d.LastHeartbeatAt != null && d.LastHeartbeatAt < cutoff).ToListAsync(stoppingToken);
