@@ -29,6 +29,7 @@ builder.Services.AddScoped<IDeviceService, DeviceService>();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHostedService<DeviceHeartbeatMonitor>();
 builder.Services.AddScoped<IViolationService, ViolationService>();
+builder.Services.AddScoped<IStatsService, StatsService>();
 var jwt = builder.Configuration.GetSection("Jwt");
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
 {
