@@ -2,8 +2,8 @@
 using ObjectDetection.Dtos;
 using Microsoft.EntityFrameworkCore;
 using ObjectDetection.Models;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion.Internal;
-using Microsoft.EntityFrameworkCore.Metadata;
+using ObjectDetection.Domain;
+
 
 namespace ObjectDetection.Services
 {
@@ -29,18 +29,6 @@ namespace ObjectDetection.Services
                 DetectedAt = at
 
             };
-        private static bool Meets(Dictionary<string, double?> attrs, string label, decimal minConfidence)
-            => attrs.GetValueOrDefault(label) is double conf && conf >= (double)minConfidence;
-        private static List<string> EvaluateByRule(Dictionary<string,double?> attrs,ComplianceRule? rule)
-        {
-            var types = new List<string>();
-            if (rule is null || !rule.Enabled) return types;
-            if (rule.RequireMask && !Meets(attrs, "mask", rule.MinConfidence))
-                types.Add("no_mask");
-            if (rule.RequireHelmet && !Meets(attrs, "helmet", rule.MinConfidence))
-                types.Add("no_helmet");
-            return types;
-        }
         public async Task<ReportResult> SaveAsync(DetectionReportDto dto,string apiKey)
         {
             var device = await _db.Devices.FirstOrDefaultAsync(c => c.DeviceCode == dto.DeviceCode);
@@ -60,7 +48,7 @@ namespace ObjectDetection.Services
                 if (person.Attributes.TryGetValue("mask", out var maskConf) && maskConf is double mc)
                     _db.Detections.Add(BuildDetection(device.Id, person, "mask", mc, detectedAt));
                 // 第 56 行，整行替换成：
-                var types = EvaluateByRule(person.Attributes, rule);
+                var types = ComplianceEvaluator.Evaluate(person.Attributes, rule);
                 if (types.Count > 0)
                 {
                     _db.Violations.Add(new Violation

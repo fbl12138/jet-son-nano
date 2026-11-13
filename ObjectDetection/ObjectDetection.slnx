@@ -1,3 +1,4 @@
 <Solution>
+  <Project Path="../test/ObjectDetection.Tests/ObjectDetection.Tests.csproj" Id="aa2adc17-9f4d-4c66-82a5-4f534d66032c" />
   <Project Path="ObjectDetection.csproj" />
 </Solution>
