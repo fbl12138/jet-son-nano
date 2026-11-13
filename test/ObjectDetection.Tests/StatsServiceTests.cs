@@ -69,4 +69,45 @@ public class StatsServiceTests
 
         Assert.Equal("2026-11-13", result.Date);
     }
+    [Fact]
+    public async Task 历史天_从聚合表读取()
+    {
+        await using var db = NewDb();
+
+        // 只往 DailyStats 塞数据，Detections 一条都没有
+        db.DailyStats.Add(new DailyStat
+        {
+            StatDate = new DateOnly(2026, 11, 12),
+            DeviceId = 1,
+            Persons = 50,
+            Violations = 10,
+            Compliant = 40
+        });
+        await db.SaveChangesAsync();
+
+        var svc = NewService(db, new DateTimeOffset(2026, 11, 13, 2, 0, 0, TimeSpan.Zero));
+        var result = await svc.GetDailyAsync(2);
+
+        // 11-12 应该来自聚合表
+        Assert.Equal("2026-11-12", result[0].Date);
+        Assert.Equal(50, result[0].PersonDetections);
+        Assert.Equal(10, result[0].Violations);
+        Assert.Equal(0.8, result[0].ComplianceRate, 4);
+    }
+
+    [Fact]
+    public async Task 多设备的同一天_求和()
+    {
+        await using var db = NewDb();
+        db.DailyStats.AddRange(
+            new DailyStat { StatDate = new DateOnly(2026, 11, 12), DeviceId = 1, Persons = 30, Violations = 5, Compliant = 25 },
+            new DailyStat { StatDate = new DateOnly(2026, 11, 12), DeviceId = 2, Persons = 20, Violations = 5, Compliant = 15 });
+        await db.SaveChangesAsync();
+
+        var svc = NewService(db, new DateTimeOffset(2026, 11, 13, 2, 0, 0, TimeSpan.Zero));
+        var result = await svc.GetDailyAsync(2);
+
+        Assert.Equal(50, result[0].PersonDetections);   // 30 + 20
+        Assert.Equal(10, result[0].Violations);         // 5 + 5
+    }
 }

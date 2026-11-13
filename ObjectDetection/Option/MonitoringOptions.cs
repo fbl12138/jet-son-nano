@@ -12,6 +12,6 @@ namespace ObjectDetection.Option
         //违规记录保留天数
         public int ViolationRetentionDays { get; set; } = 180;
         //统计回填天数
-        public int StatsBackfillDays { get; set; } = 7;
+        public int StatsBackfillDays { get; set; } = 31;
     }
 }

@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using ObjectDetection.Data;
 using ObjectDetection.Domain;
 using ObjectDetection.Models;
+using ObjectDetection.Option;
 
 namespace ObjectDetection.BackgroundServices
 {
@@ -9,12 +11,14 @@ namespace ObjectDetection.BackgroundServices
     {
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<DailyStatsWorker> _logger;
+        private readonly IOptions<MonitoringOptions> _options;
         private static readonly TimeZoneInfo Tz = TimeZoneInfo.FindSystemTimeZoneById("Asia/Shanghai");
 
-        public DailyStatsWorker(IServiceScopeFactory f,ILogger<DailyStatsWorker> logger)
+        public DailyStatsWorker(IServiceScopeFactory f,ILogger<DailyStatsWorker> logger,IOptions<MonitoringOptions> options)
         {
             _scopeFactory = f;
             _logger = logger;
+            _options = options;
         }
         protected override async Task ExecuteAsync(CancellationToken ct)
         {
@@ -25,7 +29,7 @@ namespace ObjectDetection.BackgroundServices
                 {
                     using var scope = _scopeFactory.CreateScope();
                     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                    await BackfillAsync(db, 7, ct);
+                    await BackfillAsync(db, _options.Value.StatsBackfillDays, ct);
                     await CleanupAsync(db, ct);
                 }
                 catch(Exception ex)
