@@ -6,6 +6,33 @@
 
 ---
 
+## 进度（截至 2026-11-13）
+
+| 阶段 | 内容 | 状态 |
+|---|---|---|
+| 0 | git 基线 · 依赖漏洞 · 清理模板 | ✅ |
+| 1 | 测试工程 · 全局异常处理 · Serilog | ✅ |
+| 2.1 | `MonitoringOptions` 配置集中 | ✅ |
+| 2.2 | 状态枚举化（EF 值转换 + JSON 转换器保契约） | ✅ |
+| 2.3 | 抽取 `IDeviceService`（127 → 51 行） | ✅ |
+| 2.4 | 抽取 `IViolationService`（110 → 66 行） | ✅ |
+| 2.5 | 抽取 `IStatsService`（78 → 26 行） | ✅ |
+| 2.6 | `TimeProvider` + `DailyWindow` / `ComplianceMath` 纯函数 | ✅ |
+| 3.1 | 时区错位修复（D1） | ✅ |
+| 3.2 | 复用 `DailyStats` 聚合表（D2） | ⬜ |
+| 3.3 | 修复 N+1（D4） | ⬜ |
+| 3.4 | `ConfirmFrames` 职责收敛（D3） | ⬜ |
+| 3.5 | ApiKey 哈希 + 恒定时间比较（D7） | ⬜ |
+| 4 | 健康检查 · 限流 · Docker · CI · README | ⬜ |
+
+**测试**：24 个（`ComplianceEvaluator` 9 · `DailyWindow` 4 · `ComplianceMath` 5 · `StatsClock` 3 · `StatsService` 3）
+
+> 3.1 的修复方法是把「今天」交给 `StatsClock`（由 `TimeProvider` 驱动，固定上海时区），
+> 并用 `FixedTimeProvider` 在测试里钉住「UTC 服务器 + 上海次日」这个场景——
+> 因为本机是 +08:00，这个 bug 在开发机上永远复现不了。
+
+---
+
 ## 0. 先看体检结果（我实测的，不是猜的）
 
 | 项目 | 结果 |
