@@ -7,6 +7,7 @@ using ObjectDetection.Services;
 using Swashbuckle.AspNetCore;
 using ObjectDetection.Models;
 using Microsoft.AspNetCore.Identity;
+using ObjectDetection.Infrastructure;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,6 +15,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddControllers();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
 builder.Services.AddScoped<IDetectionService,DetectionService>();
@@ -40,6 +43,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
 builder.Services.AddHostedService<DailyStatsWorker>();
 builder.Services.AddAuthorization();
 var app = builder.Build();
+app.UseExceptionHandler();
 // 仅开发环境种账号：Users 为空时建 admin(Admin) / operator(User)。
 // 生产千万别这么干——会自动造出弱口令管理员，生产用运维脚本或一次性接口建号
 if (app.Environment.IsDevelopment())
