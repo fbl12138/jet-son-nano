@@ -9,12 +9,14 @@ using ObjectDetection.Models;
 using Microsoft.AspNetCore.Identity;
 using ObjectDetection.Infrastructure;
 using System.Text;
+using ObjectDetection.Option;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
 builder.Services.AddControllers();
+builder.Services.Configure<MonitoringOptions>(builder.Configuration.GetSection(MonitoringOptions.SectionName));
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 builder.Services.AddDbContext<AppDbContext>(options =>

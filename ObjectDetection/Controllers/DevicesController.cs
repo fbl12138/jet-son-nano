@@ -4,6 +4,8 @@ using ObjectDetection.Dtos;
 using Microsoft.EntityFrameworkCore;
 using ObjectDetection.Models;
 using Microsoft.AspNetCore.Authorization;
+using ObjectDetection.Option;
+using Microsoft.Extensions.Options;
 
 
 namespace ObjectDetection.Controllers
@@ -14,11 +16,12 @@ namespace ObjectDetection.Controllers
 
     public class DevicesController : ControllerBase
     {
-        private const int HeartbeatTimeoutSeconds = 60;
         private readonly AppDbContext _db;
-        public DevicesController(AppDbContext db)
+        private readonly  MonitoringOptions _options;
+        public DevicesController(AppDbContext db,IOptions<MonitoringOptions> options)
         {
             _db = db;
+            _options = options.Value;
         }
         //将实体转化为Dto
         private static ComplianceRuleDto ToDto(ComplianceRule r) => new ComplianceRuleDto
@@ -71,7 +74,7 @@ namespace ObjectDetection.Controllers
             {
                 int? offlineSeconds = d.LastHeartbeatAt is null ? null : (int)(now - d.LastHeartbeatAt.Value).TotalSeconds;
 
-                var online = offlineSeconds is not null && offlineSeconds < HeartbeatTimeoutSeconds;
+                var online = offlineSeconds is not null && offlineSeconds < _options.HeartbeattimeoutSeconds;
                 return new DeviceDto
                 {
                     Id = d.Id,

@@ -1,9 +1,8 @@
-﻿using Microsoft.OpenApi;
+﻿
 using ObjectDetection.Data;
-using System.ComponentModel.DataAnnotations;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion.Internal;
-using System.Linq.Expressions;
+using ObjectDetection.Option;
+using Microsoft.Extensions.Options;
 
 namespace ObjectDetection.BackgroundServices
 {
@@ -11,12 +10,14 @@ namespace ObjectDetection.BackgroundServices
     {
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<DeviceHeartbeatMonitor> _logger;
-        private static readonly TimeSpan Interval = TimeSpan.FromSeconds(15);
-        private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(60);
-        public DeviceHeartbeatMonitor(IServiceScopeFactory scopeFactory,ILogger<DeviceHeartbeatMonitor> logger)
+
+        private readonly MonitoringOptions _options;
+        public DeviceHeartbeatMonitor(IServiceScopeFactory scopeFactory,ILogger<DeviceHeartbeatMonitor> logger,
+            IOptions<MonitoringOptions> options)
         {
             _scopeFactory = scopeFactory;
             _logger = logger;
+            _options = options.Value;
         }
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
@@ -26,7 +27,7 @@ namespace ObjectDetection.BackgroundServices
                 {
                     using var scope = _scopeFactory.CreateScope();
                     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                    var cutoff = DateTime.UtcNow - Timeout;
+                    var cutoff = DateTime.UtcNow - TimeSpan.FromSeconds(_options.HeartbeattimeoutSeconds);
                     //只处理曾经开过机 现在超时的设备
                     //从未开过机的也就是LastHeartbeatAt为null 保持offline不动
                     var stale = await db.Devices.Where(d => d.Status == "Online" && d.LastHeartbeatAt != null && d.LastHeartbeatAt < cutoff).ToListAsync(stoppingToken);
@@ -46,7 +47,7 @@ namespace ObjectDetection.BackgroundServices
                 {
                     _logger.LogError(ex, "心跳检测循环异常");
                 }
-                await Task.Delay(Interval, stoppingToken);
+                await Task.Delay(TimeSpan.FromSeconds(_options.HeartbeatScanIntervalSeconds), stoppingToken);
                 }
             }
         }
