@@ -12,13 +12,14 @@ namespace ObjectDetection.BackgroundServices
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<DailyStatsWorker> _logger;
         private readonly IOptions<MonitoringOptions> _options;
-        private static readonly TimeZoneInfo Tz = TimeZoneInfo.FindSystemTimeZoneById("Asia/Shanghai");
-
-        public DailyStatsWorker(IServiceScopeFactory f,ILogger<DailyStatsWorker> logger,IOptions<MonitoringOptions> options)
+        private readonly StatsClock _clock;
+  
+        public DailyStatsWorker(IServiceScopeFactory f,ILogger<DailyStatsWorker> logger,IOptions<MonitoringOptions> options,StatsClock clock)
         {
             _scopeFactory = f;
             _logger = logger;
             _options = options;
+            _clock = clock;
         }
         protected override async Task ExecuteAsync(CancellationToken ct)
         {
@@ -39,45 +40,62 @@ namespace ObjectDetection.BackgroundServices
                 await Task.Delay(TimeSpan.FromHours(1), ct); // 每小时执行一次
             }
         }
-        //回填最近7天的统计数据 扫描人数 违规人数 
-        private static async Task BackfillAsync(AppDbContext db,int days,CancellationToken ct)
+        //回填统计数据 扫描人数 违规人数 
+        private async Task BackfillAsync(AppDbContext db, int days, CancellationToken ct)
         {
-            var todayLocal = DateOnly.FromDateTime(
-                TimeZoneInfo.ConvertTime(DateTime.UtcNow, Tz)); // 上海时间的“今天”
-            for(int i = 1;i<=days;i++)
-            {
-                var day = todayLocal.AddDays(-i);
-                var startLocal = day.ToDateTime(TimeOnly.MinValue);
-                var startUtc = TimeZoneInfo.ConvertTimeToUtc(startLocal, Tz);
-                var endUtc = startUtc.AddDays(1);
-                var persons = await db.Detections.AsNoTracking()
-                    .Where(d=>d.LabelCode == "person" && d.DetectedAt >= startUtc && d.DetectedAt < endUtc)
-                    .GroupBy(d=>d.DeviceId)
-                    .Select(d=>new { DeviceId = d.Key, Count = d.Count() }).ToListAsync(ct);
-                var vios = await db.Violations.AsNoTracking()
-                    .Where(v => v.DetectedAt >= startUtc && v.DetectedAt < endUtc)
-                    .GroupBy(v => v.DeviceId)
-                    .Select(v => new { DeviceId = v.Key, Count = v.Count() }).ToListAsync(ct);
-                var deviceIds = persons.Select(p => p.DeviceId).Union(vios.Select(v => v.DeviceId)).Distinct();
-                foreach(var deviceId in deviceIds)
-                {
-                    var p = persons.FirstOrDefault(p => p.DeviceId == deviceId)?.Count ?? 0;
-                    var v = vios.FirstOrDefault(v => v.DeviceId == deviceId)?.Count ?? 0;
+            var today = _clock.TodayLocal;
+            var from = today.AddDays(-days);
 
-                    var row = await db.DailyStats.FirstOrDefaultAsync(s => s.StatDate == day && s.DeviceId == deviceId, ct);
-                    if (row is null)
-                    {
-                        row = new DailyStat { StatDate = day, DeviceId = deviceId };
-                        db.DailyStats.Add(row);
-                    }
-                    row.Persons = p;
-                    row.Violations = v;
-                    row.Compliant = ComplianceMath.Compliant(p, v);
-                    row.UpdatedAt = DateTime.UtcNow;
+            var (fromUtc, _) = DailyWindow.ForLocalDate(from, _clock.Zone);
+            var (todayUtc, _) = DailyWindow.ForLocalDate(today, _clock.Zone);
+
+            // 业务时区偏移（上海无夏令时，全天恒定）
+            var offsetHours = _clock.Zone.BaseUtcOffset.TotalHours;
+
+            // 关键 1：不再按天循环，一次查出全部天的数据，用 SQL 按「业务日」分组
+            var persons = await db.Detections.AsNoTracking()
+                .Where(d => d.LabelCode == "person" && d.DetectedAt >= fromUtc && d.DetectedAt < todayUtc)
+                .GroupBy(d => new { d.DeviceId, Day = d.DetectedAt.AddHours(offsetHours).Date })
+                .Select(g => new { g.Key.DeviceId, g.Key.Day, Count = g.Count() })
+                .ToListAsync(ct);
+
+            var violations = await db.Violations.AsNoTracking()
+                .Where(v => v.DetectedAt >= fromUtc && v.DetectedAt < todayUtc)
+                .GroupBy(v => new { v.DeviceId, Day = v.DetectedAt.AddHours(offsetHours).Date })
+                .Select(g => new { g.Key.DeviceId, g.Key.Day, Count = g.Count() })
+                .ToListAsync(ct);
+
+            // 关键 2：一次读入已有聚合行，消灭 N+1
+            var existing = await db.DailyStats
+                .Where(s => s.StatDate >= from && s.StatDate < today)
+                .ToDictionaryAsync(s => (s.StatDate, s.DeviceId), ct);
+
+            var personCounts = persons.ToDictionary(
+                x => (DateOnly.FromDateTime(x.Day), x.DeviceId), x => x.Count);
+            var violationCounts = violations.ToDictionary(
+                x => (DateOnly.FromDateTime(x.Day), x.DeviceId), x => x.Count);
+
+            // 关键 3：循环里只碰内存，不碰数据库
+            foreach (var key in personCounts.Keys.Union(violationCounts.Keys))
+            {
+                var p = personCounts.GetValueOrDefault(key);
+                var v = violationCounts.GetValueOrDefault(key);
+
+                if (!existing.TryGetValue(key, out var row))
+                {
+                    row = new DailyStat { StatDate = key.Item1, DeviceId = key.Item2 };
+                    db.DailyStats.Add(row);
+                    existing[key] = row;      // ← 别忘了登记，否则会重复插入
                 }
-                await db.SaveChangesAsync(ct);
+
+                row.Persons = p;
+                row.Violations = v;
+                row.Compliant = ComplianceMath.Compliant(p, v);
+                row.UpdatedAt = _clock.UtcNow;
             }
-            
+
+            // 关键 4：整个区间一次提交
+            await db.SaveChangesAsync(ct);
         }
         private static async Task CleanupAsync(AppDbContext db,CancellationToken ct)
         {

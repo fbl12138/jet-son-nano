@@ -23,4 +23,6 @@ public sealed class StatsClock
 
     /// <summary>业务时区下的「今天」</summary>
     public DateOnly TodayLocal => DailyWindow.LocalDate(_time.GetUtcNow(), Shanghai);
+    /// <summary>当前 UTC 时刻（写库用）</summary>
+    public DateTime UtcNow => _time.GetUtcNow().UtcDateTime;
 }
