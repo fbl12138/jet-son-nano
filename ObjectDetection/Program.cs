@@ -57,6 +57,14 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
 builder.Services.AddHostedService<DailyStatsWorker>();
 builder.Services.AddAuthorization();
 var app = builder.Build();
+
+// 容器部署：启动时自动建表/升级（由配置开关控制，默认关闭，避免误伤本地开发库）
+if (builder.Configuration.GetValue<bool>("Database:AutoMigrate"))
+{
+    using var migrateScope = app.Services.CreateScope();
+    migrateScope.ServiceProvider.GetRequiredService<AppDbContext>().Database.Migrate();
+}
+
 app.UseExceptionHandler();
 // 仅开发环境种账号：Users 为空时建 admin(Admin) / operator(User)。
 // 生产千万别这么干——会自动造出弱口令管理员，生产用运维脚本或一次性接口建号
