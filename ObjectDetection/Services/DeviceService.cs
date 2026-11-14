@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using ObjectDetection.Data;
+using ObjectDetection.Domain;
 using ObjectDetection.Dtos;
 using ObjectDetection.Models;
 using ObjectDetection.Option;
@@ -23,7 +24,7 @@ public sealed class DeviceService : IDeviceService
     {
         var device = await _db.Devices.FirstOrDefaultAsync(d => d.DeviceCode == deviceCode, ct);
         // 设备不存在和 ApiKey 不匹配返回同一个结果，避免暴露"哪个设备编码存在"
-        if (device is null || device.ApiKey != apiKey)
+        if (device is null || !ApiKeyHasher.Verify(apiKey, device.ApiKeyHash))
             return null;
 
         var now = DateTime.UtcNow;
@@ -105,7 +106,6 @@ public sealed class DeviceService : IDeviceService
         rule.RequireMask = dto.RequireMask;
         rule.RequireHelmet = dto.RequireHelmet;
         rule.MinConfidence = dto.MinConfidence;
-        rule.ConfirmFrames = dto.ConfirmFrames;
         rule.Enabled = dto.Enabled;
         rule.UpdatedAt = DateTime.UtcNow;
 
@@ -120,7 +120,6 @@ public sealed class DeviceService : IDeviceService
         RequireMask = r.RequireMask,
         RequireHelmet = r.RequireHelmet,
         MinConfidence = r.MinConfidence,
-        ConfirmFrames = r.ConfirmFrames,
         Enabled = r.Enabled,
         UpdatedAt = r.UpdatedAt
     };

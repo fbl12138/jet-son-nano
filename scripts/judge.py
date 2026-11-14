@@ -13,7 +13,7 @@ SOURCE  = sys.argv[2] if len(sys.argv) > 2 else "samples_real"
 CONF    = float(sys.argv[3]) if len(sys.argv) > 3 else 0.25
 IMGSZ   = int(sys.argv[4]) if len(sys.argv) > 4 else 640
 
-CONFIRM_FRAMES = 3        # 连续几帧一致才采信（= 规则表 ConfirmFrames）
+CONFIRM_FRAMES = 3        # 连续几帧一致才采信（设备端本地配置：服务端不再保存该值）
 DEDUP_SECONDS  = 5.0      # 同一 trackId 5 秒内不重复上报
 MIN_FACE_RATIO = 0.06     # 人脸框宽 < 画面宽 6% 就丢弃（太远）
 ROI = (0.05, 0.05, 0.95, 0.95)   # 归一化区域 x1,y1,x2,y2：只判中间这块

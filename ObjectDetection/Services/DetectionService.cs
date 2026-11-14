@@ -32,7 +32,7 @@ namespace ObjectDetection.Services
         public async Task<ReportResult> SaveAsync(DetectionReportDto dto,string apiKey)
         {
             var device = await _db.Devices.FirstOrDefaultAsync(c => c.DeviceCode == dto.DeviceCode);
-            if (device is null || device.ApiKey != apiKey)
+            if (device is null || !ApiKeyHasher.Verify(apiKey, device.ApiKeyHash))
                 throw new UnauthorizedAccessException("设备未授权");
             var rule = await _db.ComplianceRules.FirstOrDefaultAsync(r => r.DeviceId == device.Id && r.Enabled);
             int violationCount = 0;

@@ -1,4 +1,4 @@
-﻿namespace ObjectDetection.Models
+namespace ObjectDetection.Models
 {
     public class ComplianceRule
     {
@@ -7,7 +7,6 @@
         public bool RequireMask { get; set; } = true;
         public bool RequireHelmet { get; set; }
         public decimal MinConfidence { get; set; } = 0.5m;
-        public int ConfirmFrames { get; set; } = 3;
         public bool Enabled { get; set; } = true;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 

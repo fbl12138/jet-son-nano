@@ -6,7 +6,7 @@ namespace ObjectDetection.Models
         public string DeviceCode { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;
         public string? Location { get; set; }
-        public string ApiKey { get; set; } = string.Empty;
+        public string ApiKeyHash { get; set; } = string.Empty;
         public DeviceStatus Status { get; set; } = DeviceStatus.Offline;
         public DateTime? LastHeartbeatAt { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
