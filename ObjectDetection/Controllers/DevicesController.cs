@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using ObjectDetection.Dtos;
 using ObjectDetection.Services;
 
@@ -20,6 +21,7 @@ namespace ObjectDetection.Controllers
         // 设备心跳
         [HttpPost("heartbeat")]
         [AllowAnonymous]
+        [EnableRateLimiting("device")]
         public async Task<ActionResult<HeartbeatResponseDto>> HeartBeat(
             [FromBody] HeartbeatRequestDto dto,
             [FromHeader(Name = "X-Api-Key")] string? apikey,

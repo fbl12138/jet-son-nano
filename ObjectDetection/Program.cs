@@ -12,6 +12,7 @@ using ObjectDetection.Infrastructure;
 using System.Text;
 using System.Text.Json.Serialization;
 using ObjectDetection.Option;
+using Microsoft.AspNetCore.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,6 +29,21 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
 builder.Services.AddScoped<IDetectionService,DetectionService>();
 builder.Services.AddScoped<IDeviceService, DeviceService>();
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("device", opt =>
+    {
+        opt.PermitLimit = 60;
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.QueueLimit = 0;
+    });
+    options.OnRejected = async (context, token) =>
+    {
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        await context.HttpContext.Response.WriteAsJsonAsync(
+            new { message = "请求过于频繁，请稍后再试" }, token);
+    };
+});
 builder.Services.AddSwaggerGen();
 builder.Services.AddHostedService<DeviceHeartbeatMonitor>();
 builder.Services.AddScoped<IViolationService, ViolationService>();
@@ -103,7 +119,7 @@ app.UseAuthentication();
 
 app.UseAuthorization();
 
-
+app.UseRateLimiter();
 
 app.MapControllers();
 app.MapHealthChecks("/health");

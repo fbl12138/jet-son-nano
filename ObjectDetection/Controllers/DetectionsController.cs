@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using ObjectDetection.Dtos;
 using ObjectDetection.Services;
 using System.Linq.Expressions;
@@ -15,6 +16,7 @@ namespace ObjectDetection.Controllers
             _dete = dete;
         }
         [HttpPost]
+        [EnableRateLimiting("device")]
         public async Task<IActionResult> Report([FromBody] DetectionReportDto dto,[FromHeader(Name = "X-Api-Key")] string? apikey)
         {
             if (string.IsNullOrWhiteSpace(apikey))
