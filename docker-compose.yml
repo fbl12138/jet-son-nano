@@ -1,0 +1,33 @@
+version: "3.8"
+
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${DB_PASSWORD}"
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql-data:/var/opt/mssql
+    restart: unless-stopped
+
+  app:
+    build: .
+    depends_on:
+      - db
+    environment:
+      # 用 Development：会开 Swagger，并自动种 admin/operator 账号
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      # 关键：Server 用服务名 db（容器内部网络），用 SQL 认证而不是 Windows 认证
+      ConnectionStrings__Default: "Server=db,1433;Database=ObjectDetectionDb;User Id=sa;Password=${DB_PASSWORD};TrustServerCertificate=True;"
+      Jwt__Key: "${JWT_KEY}"
+      # 首次启动自动建表/跑迁移
+      Database__AutoMigrate: "true"
+    ports:
+      - "5027:8080"
+    restart: unless-stopped
+
+volumes:
+  mssql-data:
