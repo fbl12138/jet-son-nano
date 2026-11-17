@@ -1,0 +1,123 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ==========================================================
+  # 1. 后端：编译 + 单元测试
+  # ==========================================================
+  backend:
+    name: 后端编译与测试
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: 还原依赖
+        run: dotnet restore ObjectDetection/ObjectDetection.csproj
+
+      - name: 编译（Release，与镜像一致）
+        run: dotnet build ObjectDetection/ObjectDetection.csproj -c Release --no-restore
+
+      - name: 单元测试
+        run: >
+          dotnet test test/ObjectDetection.Tests/ObjectDetection.Tests.csproj
+          -c Release --logger "trx;LogFileName=test-results.trx"
+
+      - name: 上传测试报告
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: '**/*.trx'
+
+  # ==========================================================
+  # 2. 前端：类型检查 + 构建
+  # ==========================================================
+  frontend:
+    name: 前端构建
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: 安装依赖
+        run: npm ci
+        working-directory: web
+
+      - name: 构建
+        run: npm run build
+        working-directory: web
+
+  # ==========================================================
+  # 3. 验证 Dockerfile 能构建（不推送）
+  # ==========================================================
+  docker:
+    name: 镜像构建验证
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: 构建镜像
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: object-detection:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ==========================================================
+  # 4. CD：推送镜像到 GitHub Container Registry
+  #    只在 push 到 main 时执行；PR 不推
+  # ==========================================================
+  publish-image:
+    name: 发布镜像到 GHCR
+    runs-on: ubuntu-latest
+    needs: [docker]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: 登录 GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 构建并推送
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ github.repository }}:${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
