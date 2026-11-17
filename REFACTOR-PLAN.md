@@ -23,7 +23,8 @@
 | 3.3 | 修复 N+1（D4） | ✅ |
 | 3.4 | `ConfirmFrames` 职责收敛（D3，已删除并记 ADR） | ✅ |
 | 3.5 | ApiKey 哈希 + 恒定时间比较（D7） | ✅ |
-| 4 | 健康检查 · 限流 · Docker · CI · README | ⬜ |
+| 4 | 健康检查 · 限流 · Docker · README | ✅ |
+| 4.x | CI（仓库在 Gitee，需改用 Gitee Go 或镜像到 GitHub） | ⬜ |
 
 **测试**：33 个（`ComplianceEvaluator` 9 · `DailyWindow` 4 · `ComplianceMath` 5 · `StatsClock` 3 · `StatsService` 5 · `ApiKeyHasher` 7）
 
