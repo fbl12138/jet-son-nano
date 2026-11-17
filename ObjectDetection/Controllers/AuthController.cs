@@ -1,9 +1,8 @@
-using Azure.Messaging;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Identity.Client;
 using Microsoft.IdentityModel.Tokens;
 using ObjectDetection.Data;
 using ObjectDetection.Dtos;
@@ -48,6 +47,7 @@ namespace ObjectDetection.Controllers
         }
         [HttpPost("login")]
         [AllowAnonymous]
+        [EnableRateLimiting("login")]   // 登录是暴力破解的第一目标：单独限流，和设备上报互不影响
         public async Task<ActionResult> Login([FromBody] LoginRequestDto dto)
         {
             var user = await _db.Users.FirstOrDefaultAsync(c => c.Username == dto.Username);

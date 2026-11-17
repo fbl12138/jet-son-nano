@@ -47,7 +47,6 @@ namespace ObjectDetection.Services
                 _db.Detections.Add(BuildDetection(device.Id, person, "person", 1.0, detectedAt));
                 if (person.Attributes.TryGetValue("mask", out var maskConf) && maskConf is double mc)
                     _db.Detections.Add(BuildDetection(device.Id, person, "mask", mc, detectedAt));
-                // 第 56 行，整行替换成：
                 var types = ComplianceEvaluator.Evaluate(person.Attributes, rule);
                 if (types.Count > 0)
                 {

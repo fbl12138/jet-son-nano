@@ -23,7 +23,7 @@ Jetson Nano                    .NET 10 后端                    管理端
 前提：装好 Docker 与 Docker Compose。
 
 ```bash
-git clone https://gitee.com/fblfbl123/jet-son-nano.git
+git clone https://github.com/fbl12138/jet-son-nano.git
 cd jet-son-nano
 
 # 1. 配置密钥（必须改，SQL Server 对密码复杂度有要求）
@@ -43,6 +43,8 @@ curl http://localhost:5027/health        # 期望：Healthy
 > `docker-compose.yml` 里包含 `app` 与 `db`（SQL Server 2022）两个服务，
 > 应用通过服务名 `db` 访问数据库，启动时由 `Database__AutoMigrate=true` 自动建表，
 > 密码与 JWT 密钥从 `.env` 注入，不进版本库。
+> `db` 带就绪探测，应用等数据库 healthy 后再启动；迁移连不上时还会重试 10 次（每次间隔 3 秒），
+> 不会因为 SQL Server 起得慢而进重启循环。
 
 常用命令：
 
@@ -80,6 +82,9 @@ dotnet user-secrets set "ConnectionStrings:Default" "Server=localhost;Database=O
 ### 运行
 
 ```bash
+# 跑测试（37 个用例）
+dotnet test test/ObjectDetection.Tests
+
 # 建库
 dotnet ef database update --project ObjectDetection
 
@@ -114,7 +119,7 @@ py scripts/mock_jetson.py     # 每 5 秒上报检测、每 20 秒上报心跳
 | 鉴权 | 设备端 `X-Api-Key`（存哈希），管理端 JWT Bearer |
 | 后台任务 | `BackgroundService` × 2（心跳监控、统计回填与清理） |
 | 前端 | Vue 3 + TypeScript + Vite + Element Plus + axios |
-| 测试 | xUnit（33 个用例） |
+| 测试 | xUnit（37 个用例） |
 | 部署 | Docker 多阶段构建 + docker-compose |
 | 文档 | Swagger / OpenAPI |
 
@@ -124,7 +129,7 @@ py scripts/mock_jetson.py     # 每 5 秒上报检测、每 20 秒上报心跳
 
 | 方法 | 路径 | 鉴权 | 说明 |
 |---|---|---|---|
-| POST | `/api/auth/login` | 匿名 | 登录，返回 JWT（`sub`/`name`/`role`） |
+| POST | `/api/auth/login` | 匿名 | 登录，返回 JWT（`sub`/`name`/`role`）；限流 10 次/分钟 |
 | POST | `/api/devices/heartbeat` | `X-Api-Key` | 设备心跳（限流 60 次/分钟） |
 | GET | `/api/devices` | JWT | 设备列表，在线状态按最近心跳实时计算 |
 | GET | `/api/devices/{id}/rule` | JWT | 读取该设备的合规规则 |
@@ -186,15 +191,25 @@ py scripts/mock_jetson.py     # 每 5 秒上报检测、每 20 秒上报心跳
 
 检测明细保留 30 天、违规记录保留 180 天，按每批 5000 行分批删除，避免长事务锁表。
 
+**8. 违规处置是条件更新，不是「先查后改」**
+
+`PATCH /api/violations/{id}/handle` 落库时用一条 `UPDATE ... WHERE Id = @id AND Status = 'Open'`
+（EF Core `ExecuteUpdateAsync`）：受影响行数为 1 才算处置成功，为 0 且记录存在就返回 `409`。
+
+这样两个管理员同时点「处理」时，只有第一个能改到状态，第二个拿到 409，
+**不会出现「两个人都显示处理成功、后写入的把前一个人的处理人和备注覆盖掉」**。
+测试用 SQLite 覆盖了这个场景：一个上下文先读到 `Open`，另一个处置成功后再处置，必须返回 `AlreadyHandled`。
+
 ---
 
 ## 工程实践
 
 | 项 | 实现 |
 |---|---|
-| 单元测试 | **33 个 xUnit 用例**：合规判定、日期窗口、合规口径、业务时钟、统计服务（InMemory）、ApiKey 哈希 |
+| 单元测试 | **37 个 xUnit 用例**：合规判定、日期窗口、合规口径、业务时钟、统计服务（InMemory）、违规处置并发（SQLite）、ApiKey 哈希 |
 | 健康检查 | `GET /health` + `AddDbContextCheck`，容器编排可直接用作探针 |
-| 限流 | 设备接口固定窗口 60 次/分钟，超限返回 `429` |
+| 限流 | 设备接口 60 次/分钟；登录接口 10 次/分钟，超限返回 `429` |
+| 并发安全 | 违规处置用条件更新（`WHERE Status = 'Open'`），并发重复处置只会成功一次 |
 | 全局异常 | `IExceptionHandler` 统一输出 `ProblemDetails`，5xx 不泄露内部细节 |
 | 密钥管理 | 设备密钥存 SHA-256 哈希；JWT 密钥与数据库密码走环境变量 / User Secrets |
 | 容器化 | 多阶段构建（SDK 编译 → ASP.NET 运行时），最终镜像不含源码与编译器 |
@@ -205,7 +220,7 @@ py scripts/mock_jetson.py     # 每 5 秒上报检测、每 20 秒上报心跳
 
 ## CI/CD
 
-流水线定义在 `.github/workflows/ci.yml`，在 GitHub 上运行（Gitee 仓库只做镜像，不含流水线）。
+流水线定义在 `.github/workflows/ci.yml`，push / PR 自动运行。
 
 ```
 push / PR
@@ -250,7 +265,6 @@ configs/                    ByteTrack 低阈值跟踪配置
 docs/                       模型评估卡、架构决策记录
 .github/workflows/ci.yml    CI/CD 流水线
 Dockerfile / docker-compose.yml / .env.example   容器化部署
-REFACTOR-PLAN.md            改造计划与进度
 ```
 
 ---
@@ -277,7 +291,7 @@ REFACTOR-PLAN.md            改造计划与进度
 - **CI 仅跑在 GitHub**：Gitee 仓库不执行 Actions，Gitee 侧未接入 Gitee Go。
 - **部署为拉取式且手动触发**：CI/CD 止于镜像发布；服务器在内网，无公网入口，推送式部署不可行。
 - **前端构建未纳入镜像**：当前镜像使用仓库中已构建的 `wwwroot`；改前端需本地 `npm run build` 后提交产物。
-- **单实例假设**：限流计数器、后台任务都按单实例设计，多副本部署需要引入分布式限流与任务互斥。
+- **单实例假设**：限流计数器、后台任务都按单实例设计，多副本部署需要引入分布式限流与任务互斥；登录限流同样是进程内固定窗口，多实例时每个实例各算一份额度。
 - **日志仅控制台**：没有集中式日志收集与链路追踪。
 - **演示环境用 Development**：compose 里为方便演示开启自动建号与 Swagger，生产需改为运维建号。
 

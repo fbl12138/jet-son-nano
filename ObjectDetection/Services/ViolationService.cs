@@ -71,17 +71,29 @@ namespace ObjectDetection.Services
             return dto;
         }
         //处理违规记录
+        //用「条件更新」而不是「先查后改」：并发下两个管理员同时点处理，
+        //只有一条 UPDATE 能命中（WHERE Status = Open），另一条受影响行数为 0 → 409。
         public async Task<(HandleOutcome outcome, Violation? violation)> HandleAsync(long id, int userId, HandleViolationRequestDto dto, CancellationToken cancellationToken = default)
         {
-            var v = await _db.Violations.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
-            if (v is null) return (HandleOutcome.NotFound, v);
-            if (v.Status != ViolationStatus.Open) return (HandleOutcome.AlreadyHandled, v);
-            v.Status = ViolationStatus.Handled;
-            v.HandledBy = userId;
-            v.HandledAt = DateTime.UtcNow;   // 存 UTC，和 CreatedAt 一致（DetectedAt 是设备时间，Day 13 统一）
-            v.Remark = dto.Remark;
-            await _db.SaveChangesAsync(cancellationToken);
-            return (HandleOutcome.Success, v);
+            var now = DateTime.UtcNow;
+            var affected = await _db.Violations
+                .Where(v => v.Id == id && v.Status == ViolationStatus.Open)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(v => v.Status, ViolationStatus.Handled)
+                    .SetProperty(v => v.HandledBy, userId)
+                    .SetProperty(v => v.HandledAt, now)
+                    .SetProperty(v => v.Remark, dto.Remark), cancellationToken);
+
+            // ExecuteUpdate 不经过变更跟踪，重新读一次拿到最终状态（也用于区分「不存在」和「已处理」）
+            var current = await _db.Violations.AsNoTracking()
+                .FirstOrDefaultAsync(v => v.Id == id, cancellationToken);
+
+            if (affected == 0)
+                return current is null
+                    ? (HandleOutcome.NotFound, null)
+                    : (HandleOutcome.AlreadyHandled, current);
+
+            return (HandleOutcome.Success, current);
         }
     }
 }

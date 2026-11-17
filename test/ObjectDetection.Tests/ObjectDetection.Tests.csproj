@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -10,6 +10,8 @@
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.14" />
+    <!-- SQLite 用于验证条件更新这类需要真实 SQL 的语义（InMemory 不执行 UPDATE ... WHERE） -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.14" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
@@ -22,8 +24,5 @@
   <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
-	<ItemGroup>
-		<ProjectReference Include="..\..\ObjectDetection\ObjectDetection.csproj" />
-	</ItemGroup>
 
 </Project>

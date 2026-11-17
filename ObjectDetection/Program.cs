@@ -31,9 +31,17 @@ builder.Services.AddScoped<IDetectionService,DetectionService>();
 builder.Services.AddScoped<IDeviceService, DeviceService>();
 builder.Services.AddRateLimiter(options =>
 {
+    // 设备上报：网络抖动时容易重试风暴，按分钟固定窗口限流
     options.AddFixedWindowLimiter("device", opt =>
     {
         opt.PermitLimit = 60;
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.QueueLimit = 0;
+    });
+    // 管理端登录：限定每分钟尝试次数，降低口令爆破的成功率
+    options.AddFixedWindowLimiter("login", opt =>
+    {
+        opt.PermitLimit = 10;
         opt.Window = TimeSpan.FromMinutes(1);
         opt.QueueLimit = 0;
     });
@@ -75,10 +83,24 @@ builder.Services.AddAuthorization();
 var app = builder.Build();
 
 // 容器部署：启动时自动建表/升级（由配置开关控制，默认关闭，避免误伤本地开发库）
+// SQL Server 容器启动比应用慢：首次连不上时重试 10 次，避免容器直接退出进重启循环
 if (builder.Configuration.GetValue<bool>("Database:AutoMigrate"))
 {
     using var migrateScope = app.Services.CreateScope();
-    migrateScope.ServiceProvider.GetRequiredService<AppDbContext>().Database.Migrate();
+    var migrateDb = migrateScope.ServiceProvider.GetRequiredService<AppDbContext>();
+    for (var attempt = 1; ; attempt++)
+    {
+        try
+        {
+            migrateDb.Database.Migrate();
+            break;
+        }
+        catch (Exception ex) when (attempt < 10)
+        {
+            app.Logger.LogWarning(ex, "数据库迁移失败（第 {Attempt} 次），3 秒后重试", attempt);
+            Thread.Sleep(TimeSpan.FromSeconds(3));
+        }
+    }
 }
 
 app.UseExceptionHandler();
@@ -108,7 +130,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// 容器里只监听 http:8080，开发环境也走 http，跳过重定向避免每次启动刷「无法确定 https 端口」的警告
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 // 先找默认文件（index.html），再提供静态资源（JS/CSS/图片）
 // 顺序不能反：UseDefaultFiles 只改写请求路径，真正返回文件的是 UseStaticFiles
