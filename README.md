@@ -1,5 +1,7 @@
 # JetSon Nano · 边缘 AI 口罩检测与合规管理系统
 
+[![CI](https://github.com/fbl12138/jet-son-nano/actions/workflows/ci.yml/badge.svg)](https://github.com/fbl12138/jet-son-nano/actions/workflows/ci.yml)
+
 基于 NVIDIA Jetson Nano 的工厂入口口罩检测系统：边缘端跑 YOLOv8 推理与多帧判定，
 后端用 .NET 10 完成设备管理、违规裁决、处理闭环与合规统计。
 
@@ -196,7 +198,33 @@ py scripts/mock_jetson.py     # 每 5 秒上报检测、每 20 秒上报心跳
 | 全局异常 | `IExceptionHandler` 统一输出 `ProblemDetails`，5xx 不泄露内部细节 |
 | 密钥管理 | 设备密钥存 SHA-256 哈希；JWT 密钥与数据库密码走环境变量 / User Secrets |
 | 容器化 | 多阶段构建（SDK 编译 → ASP.NET 运行时），最终镜像不含源码与编译器 |
+| CI/CD | GitHub Actions：push/PR 自动编译、跑测试、构建前端、验证镜像；推 main 后发布镜像到 GHCR |
 | 决策记录 | `docs/decisions/`（ADR-001：移除服务端 `ConfirmFrames`） |
+
+---
+
+## CI/CD
+
+流水线定义在 `.github/workflows/ci.yml`，在 GitHub 上运行（Gitee 仓库只做镜像，不含流水线）。
+
+```
+push / PR
+   │
+   ├─ backend   编译 + 33 个单元测试（上传测试报告）
+   ├─ frontend  npm ci + vue-tsc 类型检查 + 构建
+   │        ↓ 两者都通过
+   └─ docker    构建镜像验证（push: false）
+            ↓
+        publish-image   ← 仅 push 到 main 时
+            构建并推送 ghcr.io/<repo>:latest 与 :<commit-sha>
+```
+
+- **CI 的价值**：每次提交都在**全新环境**验证，能发现"本地能跑但漏提交文件"的问题
+- **CD 的边界**：只负责**产出镜像**，不做部署。部署端在内网，无法被 GitHub 主动访问，因此采用**拉取式**：
+  ```bash
+  docker compose pull app && docker compose up -d app
+  ```
+- **两个 tag 的作用**：`latest` 用于日常部署，`:<sha>` 用于精确定位与回滚
 
 ---
 
@@ -220,6 +248,7 @@ scripts/                    Jetson 模拟、模型校验、视频合成、判定
 models/best.pt              口罩 YOLOv8n 权重（MIT，来源见 docs/model-eval.md）
 configs/                    ByteTrack 低阈值跟踪配置
 docs/                       模型评估卡、架构决策记录
+.github/workflows/ci.yml    CI/CD 流水线
 Dockerfile / docker-compose.yml / .env.example   容器化部署
 REFACTOR-PLAN.md            改造计划与进度
 ```
@@ -244,8 +273,9 @@ REFACTOR-PLAN.md            改造计划与进度
 
 诚实地列出来，避免"看起来完整、实际有坑"：
 
-- **无 CI**：仓库托管在 Gitee，GitHub Actions 不生效；尚未接入 Gitee Go。
 - **前端无自动化测试**：只有后端有单元测试，前端靠手工回归。
+- **CI 仅跑在 GitHub**：Gitee 仓库不执行 Actions，Gitee 侧未接入 Gitee Go。
+- **部署为拉取式且手动触发**：CI/CD 止于镜像发布；服务器在内网，无公网入口，推送式部署不可行。
 - **前端构建未纳入镜像**：当前镜像使用仓库中已构建的 `wwwroot`；改前端需本地 `npm run build` 后提交产物。
 - **单实例假设**：限流计数器、后台任务都按单实例设计，多副本部署需要引入分布式限流与任务互斥。
 - **日志仅控制台**：没有集中式日志收集与链路追踪。

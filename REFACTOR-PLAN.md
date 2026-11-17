@@ -24,7 +24,7 @@
 | 3.4 | `ConfirmFrames` 职责收敛（D3，已删除并记 ADR） | ✅ |
 | 3.5 | ApiKey 哈希 + 恒定时间比较（D7） | ✅ |
 | 4 | 健康检查 · 限流 · Docker · README | ✅ |
-| 4.x | CI（仓库在 Gitee，需改用 Gitee Go 或镜像到 GitHub） | ⬜ |
+| 4.5 | CI/CD：GitHub Actions（编译/测试/前端/镜像）+ GHCR 镜像发布 | ✅ |
 
 **测试**：33 个（`ComplianceEvaluator` 9 · `DailyWindow` 4 · `ComplianceMath` 5 · `StatsClock` 3 · `StatsService` 5 · `ApiKeyHasher` 7）
 
